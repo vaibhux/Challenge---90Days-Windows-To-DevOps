@@ -1,0 +1,762 @@
+# Module 4: Windows Registry (Windows Server Administration)
+
+The **Windows Registry** is one of the most important topics for Windows Server Administrators. Nearly every Windows configuration—services, drivers, installed software, security settings, user preferences, and boot options—is stored in the Registry. Corrupt or incorrect registry settings can cause boot failures, application issues, or service failures.
+
+---
+
+# What is the Windows Registry?
+
+The **Windows Registry** is a **hierarchical database** that stores configuration settings for:
+
+* Windows Operating System
+* Hardware
+* Installed Applications
+* Device Drivers
+* Windows Services
+* User Profiles
+* Security Settings
+
+Think of it as the **central configuration database** of Windows.
+
+Example:
+
+Instead of storing settings in hundreds of configuration files, Windows stores most settings in the Registry.
+
+---
+
+# Registry Architecture
+
+```text
+Windows Registry
+│
+├── Hives
+│     │
+│     ├── Keys
+│     │      │
+│     │      ├── Subkeys
+│     │      │      │
+│     │      │      ├── Values
+│     │      │      │      │
+│     │      │      │      ├── Data
+```
+
+Example
+
+```text
+HKLM
+ └── Software
+      └── Microsoft
+           └── Windows
+                └── CurrentVersion
+                      └── ProductName
+```
+
+---
+
+# Registry Components
+
+## 1. Hive
+
+A **Hive** is the highest level of the Registry.
+
+Example:
+
+```text
+HKLM
+```
+
+Think of a hive as a **drive** like:
+
+```text
+C:\
+D:\
+```
+
+---
+
+## 2. Key
+
+A **Key** is similar to a folder.
+
+Example:
+
+```text
+HKLM\Software
+```
+
+---
+
+## 3. Subkey
+
+A subkey is simply another key inside a key.
+
+Example:
+
+```text
+HKLM
+   └── Software
+           └── Microsoft
+```
+
+Microsoft is a subkey.
+
+---
+
+## 4. Value
+
+A value stores actual configuration data.
+
+Example:
+
+```text
+ProductName
+
+Windows Server 2022
+```
+
+---
+
+# Registry Data Structure
+
+```text
+HKLM
+ │
+ └── Software
+      │
+      └── Microsoft
+            │
+            └── Windows
+                   │
+                   └── ProductName
+                          │
+                          └── Windows Server 2022
+```
+
+---
+
+# Registry Hives
+
+There are five major Registry hives every administrator should know.
+
+---
+
+# 1. HKLM (HKEY_LOCAL_MACHINE)
+
+Most important hive.
+
+Stores **computer-wide settings**.
+
+Contains:
+
+* Installed software
+* Drivers
+* Services
+* Hardware
+* Security
+* Boot configuration
+
+Example:
+
+```text
+HKLM
+```
+
+---
+
+### Important Paths
+
+## HKLM\Software
+
+Stores:
+
+* Installed applications
+* Microsoft products
+* Application settings
+
+Example:
+
+```text
+HKLM\Software\Microsoft
+```
+
+PowerShell
+
+```powershell
+Get-Item HKLM:\Software
+```
+
+---
+
+## HKLM\System
+
+Stores:
+
+* Drivers
+* Services
+* Boot configuration
+* Hardware profile
+
+Example:
+
+```text
+HKLM\System
+```
+
+---
+
+## HKLM\Security
+
+Stores:
+
+* Local security policy
+* Security descriptors
+
+Highly protected.
+
+Even administrators cannot normally read it directly.
+
+---
+
+## HKLM\SAM
+
+Stores:
+
+* Local user accounts
+* Local password hashes
+
+Very sensitive.
+
+Protected by Windows.
+
+---
+
+## HKLM\CurrentControlSet\Services
+
+One of the most important Registry locations.
+
+Contains configuration for every Windows service.
+
+Example:
+
+```text
+HKLM
+  └── CurrentControlSet
+          └── Services
+```
+
+Inside:
+
+```text
+Spooler
+
+DHCP
+
+WinRM
+
+LanmanServer
+
+EventLog
+```
+
+Each service has:
+
+* Startup Type
+* ImagePath
+* Dependencies
+* Service Account
+* Failure actions
+
+PowerShell
+
+```powershell
+Get-ChildItem HKLM:\SYSTEM\CurrentControlSet\Services
+```
+
+---
+
+# 2. HKCU (HKEY_CURRENT_USER)
+
+Stores settings for the currently logged-in user.
+
+Contains:
+
+* Desktop settings
+* Wallpapers
+* Printers
+* Mouse
+* Keyboard
+* Office settings
+* User preferences
+
+Example:
+
+```text
+HKCU\Software
+```
+
+PowerShell
+
+```powershell
+Get-ChildItem HKCU:\Software
+```
+
+---
+
+# 3. HKCR (HKEY_CLASSES_ROOT)
+
+Stores:
+
+* File associations
+* COM registrations
+* Shell extensions
+
+Example:
+
+```text
+.txt
+
+.docx
+
+.pdf
+```
+
+Determines which application opens a file.
+
+---
+
+# 4. HKU (HKEY_USERS)
+
+Contains profiles for all users loaded on the computer.
+
+Example:
+
+```text
+HKU
+ ├── Default
+ ├── S-1-5-18
+ ├── S-1-5-19
+ └── User SID
+```
+
+Every logged-in user has a Registry profile here.
+
+---
+
+# 5. HKCC (HKEY_CURRENT_CONFIG)
+
+Stores:
+
+Current hardware profile.
+
+Contains:
+
+* Display
+* Printer
+* Current hardware configuration
+
+---
+
+# Registry Hives Summary
+
+| Hive | Purpose                  |
+| ---- | ------------------------ |
+| HKLM | Computer settings        |
+| HKCU | Current user settings    |
+| HKCR | File associations        |
+| HKU  | All user profiles        |
+| HKCC | Current hardware profile |
+
+---
+
+# Important Registry Paths
+
+## Installed Software
+
+```text
+HKLM\Software
+```
+
+---
+
+## Drivers and Services
+
+```text
+HKLM\System
+```
+
+---
+
+## Services
+
+```text
+HKLM\SYSTEM\CurrentControlSet\Services
+```
+
+---
+
+## Current User Settings
+
+```text
+HKCU\Software
+```
+
+---
+
+## Security
+
+```text
+HKLM\Security
+```
+
+---
+
+## Local Accounts
+
+```text
+HKLM\SAM
+```
+
+---
+
+# Registry Data Types
+
+---
+
+## REG_SZ
+
+String value.
+
+Example:
+
+```text
+ComputerName
+
+SERVER01
+```
+
+PowerShell
+
+```powershell
+Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion
+```
+
+---
+
+## REG_DWORD
+
+32-bit integer.
+
+Example:
+
+```text
+Enabled = 1
+```
+
+Mostly used for:
+
+* Enable
+* Disable
+* Configuration flags
+
+---
+
+## REG_BINARY
+
+Stores binary data.
+
+Example:
+
+```text
+01 0A FF 23
+```
+
+Commonly used by drivers and hardware settings.
+
+---
+
+## REG_MULTI_SZ
+
+Multiple strings.
+
+Example:
+
+```text
+DNS1
+
+DNS2
+
+DNS3
+```
+
+Useful for lists.
+
+---
+
+## REG_QWORD
+
+64-bit integer.
+
+Used when a value is larger than a DWORD.
+
+Example:
+
+```text
+Large memory limits
+```
+
+---
+
+# Common PowerShell Registry Commands
+
+## List Registry Drives
+
+```powershell
+Get-PSDrive
+```
+
+---
+
+## Read a Registry Key
+
+```powershell
+Get-Item HKLM:\Software
+```
+
+---
+
+## Read Registry Values
+
+```powershell
+Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion
+```
+
+---
+
+## Create a Registry Key
+
+```powershell
+New-Item HKLM:\Software\TestKey
+```
+
+---
+
+## Create a Registry Value
+
+```powershell
+New-ItemProperty `
+-Path HKLM:\Software\TestKey `
+-Name Enabled `
+-Value 1 `
+-PropertyType DWord
+```
+
+---
+
+## Modify a Registry Value
+
+```powershell
+Set-ItemProperty `
+-Path HKLM:\Software\TestKey `
+-Name Enabled `
+-Value 0
+```
+
+---
+
+## Delete a Registry Value
+
+```powershell
+Remove-ItemProperty `
+-Path HKLM:\Software\TestKey `
+-Name Enabled
+```
+
+---
+
+## Delete a Registry Key
+
+```powershell
+Remove-Item HKLM:\Software\TestKey
+```
+
+---
+
+## Export Registry
+
+```cmd
+reg export HKLM\Software C:\Software.reg
+```
+
+---
+
+## Import Registry
+
+```cmd
+reg import C:\Software.reg
+```
+
+---
+
+# Frequently Asked Interview Questions
+
+## 1. What is the Windows Registry?
+
+**Answer:**
+
+The Windows Registry is a hierarchical database that stores operating system, hardware, software, service, driver, and user configuration settings. Windows reads these settings during boot and while applications are running.
+
+---
+
+## 2. What is a Registry Hive?
+
+**Answer:**
+
+A Registry Hive is the top-level section of the Registry that stores a major category of configuration data, such as computer settings (HKLM) or current user settings (HKCU).
+
+---
+
+## 3. What is the difference between a Key and a Value?
+
+**Answer:**
+
+* A **Key** is like a folder that organizes Registry data.
+* A **Value** is the actual configuration data stored inside a key.
+
+Example:
+
+```text
+HKLM\Software\Microsoft
+```
+
+* `Software` and `Microsoft` are keys.
+* `ProductName` could be a value stored inside a key.
+
+---
+
+## 4. What does HKLM store?
+
+**Answer:**
+
+HKLM (HKEY_LOCAL_MACHINE) stores computer-wide settings, including installed software, hardware configuration, drivers, services, and security settings. These settings apply to all users.
+
+---
+
+## 5. What does HKCU store?
+
+**Answer:**
+
+HKCU (HKEY_CURRENT_USER) stores settings for the currently logged-in user, such as desktop preferences, application settings, keyboard, mouse, and Office configuration.
+
+---
+
+## 6. Where are Windows Service configurations stored?
+
+**Answer:**
+
+Service configurations are stored under:
+
+```text
+HKLM\SYSTEM\CurrentControlSet\Services
+```
+
+Each service has its own key containing information such as startup type, executable path (`ImagePath`), dependencies, and account configuration.
+
+---
+
+## 7. What is CurrentControlSet?
+
+**Answer:**
+
+`CurrentControlSet` is a pointer to the control set Windows is currently using. It contains active system configuration such as services, drivers, and hardware settings. Administrators typically modify this location rather than editing individual `ControlSet00x` keys.
+
+---
+
+## 8. What are the common Registry data types?
+
+| Data Type    | Purpose          |
+| ------------ | ---------------- |
+| REG_SZ       | Text string      |
+| REG_DWORD    | 32-bit integer   |
+| REG_QWORD    | 64-bit integer   |
+| REG_BINARY   | Binary data      |
+| REG_MULTI_SZ | Multiple strings |
+
+---
+
+## 9. How do you back up the Registry before making changes?
+
+**Answer:**
+
+Use the Registry Editor (**File → Export**) or the command:
+
+```cmd
+reg export HKLM\Software C:\Software.reg
+```
+
+This creates a backup that can be restored with:
+
+```cmd
+reg import C:\Software.reg
+```
+
+---
+
+## 10. What precautions should you take before editing the Registry?
+
+**Answer:**
+
+* Export the key or the entire Registry before making changes.
+* Verify the exact key and value being modified.
+* Use the correct data type (e.g., REG_DWORD vs. REG_SZ).
+* Test changes in a non-production environment when possible.
+* Document all modifications so they can be rolled back if necessary.
+
+---
+
+# PowerShell Registry Health Check Tool
+
+```powershell
+Write-Host "========== REGISTRY HEALTH CHECK ==========" -ForegroundColor Cyan
+
+Write-Host "`nInstalled Software Key" -ForegroundColor Yellow
+Test-Path "HKLM:\SOFTWARE"
+
+Write-Host "`nCurrent User Software Key" -ForegroundColor Yellow
+Test-Path "HKCU:\SOFTWARE"
+
+Write-Host "`nService Registry Keys (Top 10)" -ForegroundColor Yellow
+Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services" |
+Select-Object -First 10 Name
+
+Write-Host "`nWindows Current Version Information" -ForegroundColor Yellow
+Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" |
+Select-Object ProductName, CurrentBuild, DisplayVersion
+
+Write-Host "`nRegistry Health Check Completed." -ForegroundColor Green
+```
+
+---
+
+# Real-Time Interview Scenario
+
+**Question:** *A Windows service fails to start with "The system cannot find the file specified." How would you troubleshoot?*
+
+**Expected Answer:**
+
+1. Check the service status:
+
+   ```powershell
+   Get-Service <ServiceName>
+   ```
+2. Verify the service's **ImagePath** in the Registry:
+
+   ```powershell
+   Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Services\<ServiceName>" |
+   Select-Object ImagePath
+   ```
+3. Confirm that the executable file exists at the specified path.
+4. Check service dependencies and startup type.
+5. Review **Event Viewer** (System log, Service Control Manager events).
+6. If the Registry path is incorrect, restore it from backup or reinstall/repair the application.
+
+This type of answer shows that you understand how the Registry, services, and troubleshooting fit together in a real enterprise Windows environment.
