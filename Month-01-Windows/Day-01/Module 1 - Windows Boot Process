@@ -1,0 +1,577 @@
+What is the BIOS?
+Firmware: The BIOS acts as the essential bridge between computer hardware and software, often compared to a human's brain stem controlling basic bodily functions 
+Boot Process: When a computer turns on, the BIOS checks settings in the CMOS chip, initializes hardware (CPU, RAM, peripherals), runs a Power-On Self-Test (POST) to ensure everything is functioning, and finally hands control to the operating system 
+Limitations: Traditional BIOS systems, which utilized the Master Boot Record (MBR), are limited to handling storage partitions under two terabytes 
+
+The Transition to UEFI:
+Modern Improvements: To address the limitations of older BIOS systems, UEFI was developed.
+Key Advantages: UEFI supports significantly larger storage devices, offers faster boot times, and features a user-friendly graphical interface with mouse support, replacing the old blue-screen utility 
+
+What happens to BIOS after booting Windows?
+Once the computer finishes the boot process and hands control over to the operating system (such as Windows), the BIOS effectively "goes to sleep"
+While older systems relied on the BIOS to act as a bridge between hardware (like your keyboard and mouse) and the operating system, modern versions of Windows communicate with hardware much more directly. Consequently, the BIOS remains inactive in the background until the system is restarted or powered on again.
+
+The startup workflow for a computer system using the **BIOS** (Basic Input/Output System) as follows:
+
+1.  **System Power-On:** When you first turn on the computer, the **BIOS** is the first piece of code to execute, acting similarly to a car's ignition
+2.  **Settings Check:** The **BIOS** references the user-defined settings stored in the *CMOS chip* to determine how the system should operate 
+3.  **Hardware Initialization:** The system initializes essential components, including the **CPU**, **RAM**, **graphics card**, and various peripherals 
+4.  **POST (Power-On Self-Test):** The system performs a self-diagnostic check to ensure all internal components are functioning correctly. A single beep typically indicates a successful test, while multiple beeps indicate an error
+6.  **Hand-off:** Once the drive is identified, the **BIOS** hands control over to the operating system, at which point the **BIOS** effectively "goes to sleep" 
+
+The differences between **MBR (Master Boot Record)** and **GPT (GUID Partition Table)**
+
+### **Key Differences & Why GPT is Preferred:**
+*   **Storage Capacity:** MBR drives are limited to roughly 2.5TB of usable space. If you use an MBR partition on a larger drive, you will be unable to access the full capacity of your storage.
+*   **Firmware Requirements:** 
+    *   **MBR** requires **BIOS** firmware.
+    *   **GPT** requires **UEFI** firmware.
+*   **Future Compatibility:** GPT is the modern standard and is required for future-proofing your system.
+
+### **How to Check Your Drive Type:**
+*   You can check if your current drive is MBR or GPT by navigating to **Disk Management** in Windows, right-clicking your drive, and checking the **Volumes** tab for the partition style.
+
+### **Recommendations for Users:**
+*   **For New Setups:** If you are building a new computer or upgrading, the creator strongly recommends installing Windows using **UEFI** mode, which automatically creates a **GPT** partition.
+*   **Conversion:** The creator advises against attempting to convert an existing MBR drive to GPT due to the risk of data loss and technical complexity. Instead, they suggest backing up data and performing a fresh install on a new drive.
+
+
+These are the **core components of the Windows boot process**. If you're preparing for Windows Server administration or interviews, you should know **what each component does, where it is located, and what happens if it fails.**
+
+---
+
+# Complete Windows Boot Process
+
+```text
+Power Button
+      │
+      ▼
+BIOS / UEFI
+      │
+      ▼
+MBR / GPT
+      │
+      ▼
+Windows Boot Manager (bootmgfw.efi)
+      │
+      ▼
+BCD (Boot Configuration Data)
+      │
+      ▼
+winload.efi
+      │
+      ▼
+ntoskrnl.exe + HAL.dll + Boot Drivers
+      │
+      ▼
+Kernel Initialization
+      │
+      ▼
+smss.exe (Session Manager)
+      │
+      ▼
+csrss.exe + wininit.exe
+      │
+      ▼
+services.exe
+lsass.exe
+      │
+      ▼
+winlogon.exe
+      │
+      ▼
+User Login
+      │
+      ▼
+explorer.exe (Desktop)
+```
+
+---
+
+# 1. BIOS vs UEFI
+
+These are the firmware programs that run immediately after powering on the computer.
+
+## BIOS (Basic Input Output System)
+
+Old firmware standard.
+
+### Responsibilities
+
+* Performs POST (Power On Self Test)
+* Detects CPU
+* Detects RAM
+* Detects keyboard
+* Detects disks
+* Finds bootable disk
+* Reads MBR
+
+### Limitations
+
+* Supports disks only up to 2 TB
+* Maximum 4 primary partitions
+* Slower boot
+* 16-bit firmware
+
+---
+
+## UEFI (Unified Extensible Firmware Interface)
+
+Modern replacement for BIOS.
+
+### Responsibilities
+
+Everything BIOS does plus:
+
+* Faster boot
+* Secure Boot
+* Mouse support
+* GPT support
+* Network boot
+* Larger disks
+* 64-bit firmware
+
+Instead of reading MBR, UEFI loads:
+
+```
+bootmgfw.efi
+```
+
+from the EFI System Partition.
+
+---
+
+## Interview Question
+
+**Which one does Windows Server 2022 use?**
+
+Answer:
+
+> UEFI with GPT.
+
+---
+
+# 2. MBR vs GPT
+
+These describe how a disk stores partition information.
+
+---
+
+## MBR (Master Boot Record)
+
+Located in the first sector of the disk.
+
+Contains:
+
+* Boot code
+* Partition table
+* Disk signature
+
+Maximum
+
+* 2 TB disk
+* 4 primary partitions
+
+Boot Process
+
+```
+BIOS
+   ↓
+Reads MBR
+   ↓
+Loads Boot Manager
+```
+
+---
+
+## GPT (GUID Partition Table)
+
+Modern partition style.
+
+Supports
+
+* 9.4 ZB disks
+* 128 partitions
+* Multiple partition table copies
+* CRC protection
+
+Boot Process
+
+```
+UEFI
+   ↓
+EFI System Partition
+   ↓
+bootmgfw.efi
+```
+
+---
+
+## MBR vs GPT
+
+| Feature     | MBR  | GPT       |
+| ----------- | ---- | --------- |
+| Max Disk    | 2 TB | 9.4 ZB    |
+| Partitions  | 4    | 128       |
+| Firmware    | BIOS | UEFI      |
+| Recovery    | Poor | Excellent |
+| Secure Boot | No   | Yes       |
+
+---
+
+# 3. Windows Boot Manager
+
+File:
+
+```
+bootmgfw.efi
+```
+
+Location
+
+```
+EFI System Partition
+```
+
+Job
+
+* Finds Windows installation
+* Reads BCD
+* Displays boot menu
+* Starts Windows Loader
+
+Think of Boot Manager as the receptionist.
+
+It asks:
+
+> Which operating system should I start?
+
+---
+
+# 4. BCD (Boot Configuration Data)
+
+Think of BCD as a database.
+
+It stores:
+
+* Installed operating systems
+* Boot menu timeout
+* Safe Mode entries
+* Recovery options
+* Debug options
+
+Location
+
+```
+EFI\Microsoft\Boot\BCD
+```
+
+or
+
+```
+\Boot\BCD
+```
+
+Useful Commands
+
+```
+bcdedit
+```
+
+Example
+
+```
+bcdedit /enum
+```
+
+---
+
+# 5. winload.efi
+
+This is the Windows Loader.
+
+Job
+
+Loads:
+
+* Windows Kernel
+* HAL
+* Boot Drivers
+* Registry Hive
+
+Without it:
+
+Windows cannot start.
+
+Location
+
+```
+C:\Windows\System32\winload.efi
+```
+
+---
+
+# 6. ntoskrnl.exe
+
+This is the Windows Kernel.
+
+The most important file in Windows.
+
+Location
+
+```
+C:\Windows\System32\
+```
+
+Responsibilities
+
+* Memory management
+* Process scheduling
+* Thread scheduling
+* Driver communication
+* Interrupt handling
+* Virtual memory
+* CPU scheduling
+
+Think of it as the operating system's brain.
+
+---
+
+# 7. HAL (Hardware Abstraction Layer)
+
+File
+
+```
+hal.dll
+```
+
+Purpose
+
+Creates a common interface between Windows and hardware.
+
+Without HAL:
+
+Every motherboard would require a different Windows version.
+
+HAL hides hardware differences.
+
+Example
+
+```
+Application
+     ↓
+Windows
+     ↓
+HAL
+     ↓
+CPU
+```
+
+---
+
+# 8. Session Manager (smss.exe)
+
+First user-mode process created by the kernel.
+
+Location
+
+```
+C:\Windows\System32\
+```
+
+Responsibilities
+
+* Creates system session
+* Creates user session
+* Starts paging files
+* Loads environment variables
+* Starts csrss.exe
+* Starts wininit.exe
+
+Without it
+
+Windows stops booting.
+
+---
+
+# 9. Winlogon
+
+Process
+
+```
+winlogon.exe
+```
+
+Responsibilities
+
+* Shows login screen
+* Ctrl+Alt+Delete
+* Starts user shell
+* Loads user profile
+* Handles lock/unlock
+* Password changes
+
+Without Winlogon
+
+No login screen appears.
+
+---
+
+# 10. LSASS
+
+Process
+
+```
+lsass.exe
+```
+
+Local Security Authority Subsystem Service
+
+Responsibilities
+
+* Authenticates users
+* Creates security tokens
+* Enforces password policy
+* Kerberos authentication
+* NTLM authentication
+* Domain authentication
+* Auditing
+
+Example
+
+When you log in to an Active Directory domain:
+
+```
+Username
+Password
+      ↓
+Winlogon
+      ↓
+LSASS
+      ↓
+Domain Controller
+      ↓
+Success
+```
+
+If `lsass.exe` crashes, Windows typically forces a restart because it cannot maintain system security.
+
+---
+
+# 11. Explorer.exe
+
+This is the Windows Shell.
+
+Starts after successful login.
+
+Responsibilities
+
+* Desktop
+* Taskbar
+* Start Menu
+* File Explorer
+* Icons
+
+Location
+
+```
+C:\Windows\explorer.exe
+```
+
+Without Explorer
+
+Windows still runs, but you only see a command prompt or Task Manager (depending on how the shell is started).
+
+---
+
+# Putting It All Together
+
+```text
+Power On
+    │
+    ▼
+BIOS / UEFI
+    │
+    ▼
+POST
+    │
+    ▼
+MBR / GPT
+    │
+    ▼
+Windows Boot Manager (bootmgfw.efi)
+    │
+    ▼
+BCD
+    │
+    ▼
+winload.efi
+    │
+    ▼
+ntoskrnl.exe
+    │
+    ├── HAL.dll
+    ├── Boot Drivers
+    └── Registry
+    │
+    ▼
+Kernel Starts
+    │
+    ▼
+smss.exe
+    │
+    ├── csrss.exe
+    └── wininit.exe
+          ├── services.exe
+          ├── lsass.exe
+          └── lsm.exe
+    │
+    ▼
+winlogon.exe
+    │
+    ▼
+User Authentication (LSASS)
+    │
+    ▼
+explorer.exe
+    │
+    ▼
+Desktop Ready
+```
+
+## Common Interview Questions
+
+1. **What is the difference between BIOS and UEFI?**
+   BIOS boots from the MBR and has legacy limitations (2 TB disks, 4 primary partitions). UEFI boots from the EFI System Partition, supports GPT, Secure Boot, larger disks, and faster startup.
+
+2. **What is the difference between MBR and GPT?**
+   MBR is the older partitioning scheme for BIOS systems. GPT is the modern partitioning scheme used with UEFI, supporting larger disks, more partitions, and improved reliability.
+
+3. **What is the role of Windows Boot Manager?**
+   It reads the BCD store, presents boot options if needed, and launches the Windows loader (`winload.efi`).
+
+4. **What is BCD?**
+   The Boot Configuration Data store is a database containing Windows boot entries and boot settings.
+
+5. **What does `winload.efi` do?**
+   It loads the Windows kernel (`ntoskrnl.exe`), HAL, boot-start drivers, and essential registry data into memory.
+
+6. **What is `ntoskrnl.exe`?**
+   The Windows kernel, responsible for memory management, process/thread scheduling, hardware interaction, and core operating system services.
+
+7. **What is the purpose of `hal.dll`?**
+   It provides a hardware abstraction layer so Windows can work across different hardware platforms without major changes.
+
+8. **What is `smss.exe`?**
+   The Session Manager initializes user-mode components, creates system sessions, and starts critical processes like `csrss.exe` and `wininit.exe`.
+
+9. **What does `winlogon.exe` do?**
+   It manages the interactive logon process, displays the sign-in screen, loads user profiles, and starts the user shell.
+
+10. **What is `lsass.exe` responsible for?**
+    It handles authentication, creates security tokens, enforces security policies, and supports Kerberos and NTLM authentication.
+
+11. **What is `explorer.exe`?**
+    It is the Windows shell that provides the desktop, Start menu, taskbar, and File Explorer after a user signs in.
+
+Mastering these components gives you a solid understanding of the Windows startup sequence and prepares you for many Windows Server administration and troubleshooting interview questions.
