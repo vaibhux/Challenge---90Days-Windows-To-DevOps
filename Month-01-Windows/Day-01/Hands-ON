@@ -1,0 +1,685 @@
+This is an excellent hands-on module. Since you're aiming for **Windows L3 Support Engineer/System Administrator**, I've upgraded these labs to resemble what you'd actually do in a production environment. These are also the kinds of exercises that interviewers often ask about.
+
+---
+
+# 🧪 Lab 1 – Process Exploration (25 Minutes)
+
+## Objective
+
+Learn how Windows manages processes, threads, handles, memory, and parent-child relationships.
+
+---
+
+## Step 1: Open Task Manager
+
+Press:
+
+```text
+Ctrl + Shift + Esc
+```
+
+Go to the following tabs:
+
+### Processes
+
+Observe:
+
+* CPU Usage
+* Memory Usage
+* Disk Usage
+* Network Usage
+* GPU Usage (if available)
+
+Questions:
+
+* Which process uses the most CPU?
+* Which uses the most memory?
+* Which process has PID 4?
+
+---
+
+### Performance
+
+Observe:
+
+* CPU
+* Memory
+* Disk
+* Ethernet
+* Wi-Fi
+
+Questions:
+
+* Total RAM?
+* Available RAM?
+* CPU utilization?
+* Number of logical processors?
+
+---
+
+### Services
+
+Observe:
+
+* Running services
+* Stopped services
+
+Right-click a service
+
+Choose:
+
+```text
+Go To Details
+```
+
+Observe the corresponding process.
+
+---
+
+### Startup
+
+Observe:
+
+* Startup applications
+* Startup impact
+* Enabled/Disabled status
+
+Questions:
+
+* Which applications slow startup?
+* How can you disable unnecessary startup apps?
+
+---
+
+## Step 2: Open Process Explorer (Sysinternals)
+
+Run:
+
+```text
+procexp.exe
+```
+
+(Preferably as Administrator.)
+
+---
+
+### Observe Parent-Child Relationships
+
+Example:
+
+```text
+explorer.exe
+      │
+      ├── cmd.exe
+      │      └── powershell.exe
+      │
+      └── notepad.exe
+```
+
+Questions:
+
+* Who started `cmd.exe`?
+* Who started `explorer.exe`?
+* What is the parent of `powershell.exe`?
+
+---
+
+### Observe Threads
+
+Double-click:
+
+```text
+explorer.exe
+```
+
+Open:
+
+```text
+Threads
+```
+
+Observe:
+
+* Thread IDs
+* CPU usage
+* Start addresses
+
+Questions:
+
+* How many threads does Explorer have?
+* Which thread is consuming the most CPU?
+
+---
+
+### Observe Handles
+
+Go to:
+
+```text
+Properties → Handles
+```
+
+Observe:
+
+* Files
+* Registry keys
+* Events
+* Mutexes
+
+Questions:
+
+* How many handles are open?
+* Which handle type is most common?
+
+---
+
+### Observe DLLs
+
+Open:
+
+```text
+DLLs
+```
+
+Observe:
+
+* Loaded DLLs
+* File path
+* Version
+
+Questions:
+
+* Which DLL loads the Windows UI?
+* Which DLL belongs to Microsoft?
+
+---
+
+### Observe Digital Signature
+
+Right-click:
+
+```text
+explorer.exe
+```
+
+Properties
+
+Image
+
+Observe:
+
+* Company Name
+* Digital Signature
+* Image Path
+
+Question:
+
+* Why is verifying digital signatures important? (Hint: malware detection.)
+
+---
+
+## Useful PowerShell Commands
+
+Top CPU processes
+
+```powershell
+Get-Process |
+Sort CPU -Descending |
+Select -First 10
+```
+
+Top Memory processes
+
+```powershell
+Get-Process |
+Sort WorkingSet -Descending |
+Select -First 10
+```
+
+Top Handle count
+
+```powershell
+Get-Process |
+Sort Handles -Descending |
+Select -First 10
+```
+
+Top Thread count
+
+```powershell
+Get-Process |
+Sort Threads -Descending |
+Select -First 10
+```
+
+---
+
+# 🧪 Lab 2 – Windows Services (25 Minutes)
+
+## Open Services Console
+
+Run:
+
+```text
+services.msc
+```
+
+---
+
+## Exercise 1 – Stop Print Spooler
+
+Locate:
+
+```text
+Print Spooler
+```
+
+Right-click
+
+```text
+Stop
+```
+
+Observe:
+
+* Printing no longer works.
+
+---
+
+## Exercise 2 – Start Print Spooler
+
+```text
+Start
+```
+
+Confirm:
+
+```text
+Status = Running
+```
+
+---
+
+## Exercise 3 – Change Startup Type
+
+Try:
+
+* Automatic
+* Automatic (Delayed Start)
+* Manual
+* Disabled
+
+Observe the difference after restarting the service or system.
+
+---
+
+## Exercise 4 – Check Dependencies
+
+Open:
+
+```text
+Properties
+```
+
+Dependencies
+
+Observe:
+
+* Services this service depends on.
+* Services that depend on it.
+
+---
+
+## Exercise 5 – Recovery
+
+Open:
+
+```text
+Recovery
+```
+
+Observe:
+
+* First Failure
+* Second Failure
+* Subsequent Failures
+
+Common production configuration:
+
+```text
+Restart Service
+Restart Service
+Restart Computer
+```
+
+---
+
+## PowerShell Practice
+
+List services
+
+```powershell
+Get-Service
+```
+
+Running services
+
+```powershell
+Get-Service |
+Where Status -eq Running
+```
+
+Stopped services
+
+```powershell
+Get-Service |
+Where Status -eq Stopped
+```
+
+Print Spooler
+
+```powershell
+Get-Service spooler
+```
+
+Restart service
+
+```powershell
+Restart-Service spooler
+```
+
+Automatic services not running
+
+```powershell
+Get-CimInstance Win32_Service |
+Where {
+    $_.StartMode -eq "Auto" -and
+    $_.State -ne "Running"
+}
+```
+
+---
+
+# 🧪 Lab 3 – Registry (30 Minutes)
+
+## Open Registry Editor
+
+Run:
+
+```text
+regedit
+```
+
+---
+
+Navigate to:
+
+```text
+HKLM\SYSTEM\CurrentControlSet\Services
+```
+
+Observe:
+
+Every Windows Service has its own Registry key.
+
+---
+
+Find these services:
+
+* Spooler
+* BITS
+* wuauserv (Windows Update)
+* RemoteRegistry
+
+Observe:
+
+* ImagePath
+* DisplayName
+* Start
+* Type
+* DependOnService
+
+---
+
+## Registry Values
+
+### ImagePath
+
+Shows executable location.
+
+Example:
+
+```text
+C:\Windows\System32\spoolsv.exe
+```
+
+---
+
+### Start Value
+
+| Value | Meaning   |
+| ----: | --------- |
+|     0 | Boot      |
+|     1 | System    |
+|     2 | Automatic |
+|     3 | Manual    |
+|     4 | Disabled  |
+
+---
+
+### Type
+
+Represents the service type (kernel driver, file system driver, Win32 service, etc.).
+
+---
+
+## Export Registry Key
+
+Right-click:
+
+```text
+Spooler
+```
+
+Choose:
+
+```text
+Export
+```
+
+Save as:
+
+```text
+Spooler.reg
+```
+
+---
+
+## Restore Registry
+
+Double-click:
+
+```text
+Spooler.reg
+```
+
+or
+
+```cmd
+reg import Spooler.reg
+```
+
+---
+
+## PowerShell
+
+List services Registry keys
+
+```powershell
+Get-ChildItem HKLM:\SYSTEM\CurrentControlSet\Services
+```
+
+Read one service
+
+```powershell
+Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Services\Spooler
+```
+
+---
+
+# 🧪 Lab 4 – Event Viewer (25 Minutes)
+
+Open:
+
+```text
+eventvwr.msc
+```
+
+---
+
+Go to:
+
+```text
+Windows Logs
+```
+
+Open:
+
+* Application
+* Security
+* System
+* Setup
+
+---
+
+## Find
+
+### Boot
+
+Event ID
+
+```text
+6005
+```
+
+---
+
+### Shutdown
+
+```text
+6006
+```
+
+---
+
+### Unexpected Shutdown
+
+```text
+41
+```
+
+---
+
+### Planned Restart
+
+```text
+1074
+```
+
+---
+
+### Failed Login
+
+```text
+4625
+```
+
+---
+
+### Successful Login
+
+```text
+4624
+```
+
+---
+
+### Service Started
+
+```text
+7036
+```
+
+---
+
+### Service Installed
+
+```text
+7045
+```
+
+---
+
+## Filter Logs
+
+Click:
+
+```text
+Filter Current Log
+```
+
+Select:
+
+```text
+Critical
+
+Error
+
+Warning
+```
+
+Observe only high-priority events.
+
+---
+
+## Export Logs
+
+Right-click:
+
+```text
+Save All Events As...
+```
+
+Save:
+
+```text
+System.evtx
+```
+
+---
+
+## PowerShell
+
+Last 20 events
+
+```powershell
+Get-WinEvent -LogName System -MaxEvents 20
+```
+
+Failed logins
+
+```powershell
+Get-WinEvent -FilterHashtable @{
+LogName='Security'
+ID=4625
+}
+```
+
+Critical events
+
+```powershell
+Get-WinEvent -FilterHashtable @{
+LogName='System'
+Level=1
+}
+```
