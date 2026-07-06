@@ -1,0 +1,1225 @@
+Understanding Windows processes also helps you troubleshoot **high CPU, memory leaks, service failures, hung applications, BSODs, and malware**.
+
+---
+
+# Windows Process Architecture
+
+```
+Power On
+      │
+      ▼
+Kernel Starts
+      │
+      ▼
+smss.exe
+      │
+      ├── csrss.exe
+      ├── wininit.exe
+      │        │
+      │        ├── services.exe
+      │        │      │
+      │        │      ├── svchost.exe
+      │        │      └── Windows Services
+      │        │
+      │        └── lsass.exe
+      │
+      ▼
+winlogon.exe
+      │
+      ▼
+explorer.exe
+      │
+      ▼
+Applications
+```
+
+---
+
+# 1. What is a Process?
+
+A **process** is a running instance of a program.
+
+Example:
+
+```
+notepad.exe
+```
+
+When you double-click Notepad:
+
+```
+Program on Disk
+        │
+        ▼
+Loaded into RAM
+        │
+        ▼
+Process Created
+```
+
+A process contains:
+
+* Executable code (.exe)
+* Virtual memory
+* Threads
+* Handles
+* Security token
+* Process ID (PID)
+
+Example:
+
+```
+chrome.exe
+
+PID = 4420
+Memory = 800 MB
+Threads = 55
+Handles = 1800
+```
+
+Think of a process as a **house** that contains everything needed for the application to run.
+
+---
+
+# 2. What is a Thread?
+
+A **thread** is the smallest unit of execution inside a process.
+
+One process can have many threads.
+
+Example:
+
+```
+Chrome Process
+
+├── Thread 1
+├── Thread 2
+├── Thread 3
+├── Thread 4
+└── Thread 5
+```
+
+Example:
+
+Microsoft Word
+
+One thread:
+
+* Spell check
+
+Another thread:
+
+* Auto save
+
+Another thread:
+
+* UI
+
+Another thread:
+
+* Printing
+
+All belong to the same process.
+
+---
+
+### Interview Question
+
+**Difference between Process and Thread?**
+
+| Process               | Thread                         |
+| --------------------- | ------------------------------ |
+| Independent           | Lives inside a process         |
+| Own memory space      | Shares process memory          |
+| Heavyweight           | Lightweight                    |
+| Own PID               | Thread ID (TID)                |
+| Can have many threads | Cannot exist without a process |
+
+---
+
+# 3. What is a Handle?
+
+A **handle** is an identifier (reference) that Windows gives a process to access a resource.
+
+Resources include:
+
+* Files
+* Registry keys
+* Events
+* Mutexes
+* Network sockets
+* Processes
+* Threads
+
+Example:
+
+```
+notepad.exe
+
+opens
+
+notes.txt
+```
+
+Windows creates a file handle.
+
+```
+Handle = 0x000004A8
+```
+
+Instead of remembering the entire file location, the process uses the handle.
+
+---
+
+### Why are handles important?
+
+Too many handles can indicate:
+
+* Handle leaks
+* Memory leaks
+* Applications not closing files
+
+Use **Task Manager** (Details tab → Select Columns → Handles) or **Process Explorer** to inspect handle counts.
+
+---
+
+# 4. What is Memory?
+
+Memory (RAM) is where running processes store:
+
+* Code
+* Variables
+* Stacks
+* Heaps
+* DLLs
+
+Example:
+
+```
+Chrome
+
+RAM
+
+600 MB
+```
+
+Without RAM:
+
+Programs cannot execute.
+
+---
+
+# 5. What is Virtual Memory?
+
+Virtual memory gives every process its own logical address space.
+
+Example:
+
+```
+RAM
+
+16 GB
+```
+
+Applications behave as if they have much more memory because Windows maps virtual addresses to physical RAM and, when needed, to disk (page file).
+
+Example:
+
+```
+RAM Full
+      │
+      ▼
+Pagefile.sys
+```
+
+Location:
+
+```
+C:\pagefile.sys
+```
+
+Benefits:
+
+* Prevents one process from accessing another process's memory.
+* Allows the system to continue running when RAM is under pressure.
+* Supports larger virtual address spaces than physical RAM alone.
+
+---
+
+# 6. Process States
+
+Typical thread/process execution states include:
+
+```
+New
+ │
+ ▼
+Ready
+ │
+ ▼
+Running
+ │
+ ├──────────────┐
+ ▼              │
+Waiting         │
+ │              │
+ ▼              │
+Ready ◄─────────┘
+ │
+ ▼
+Terminated
+```
+
+Meaning:
+
+* **New** – Process created.
+* **Ready** – Waiting for CPU time.
+* **Running** – Executing on the CPU.
+* **Waiting/Blocked** – Waiting for I/O or another event.
+* **Terminated** – Execution complete.
+
+---
+
+# 7. Parent-Child Relationship
+
+Processes can create other processes.
+
+Example:
+
+```
+explorer.exe
+      │
+      ▼
+cmd.exe
+      │
+      ▼
+powershell.exe
+```
+
+Another example:
+
+```
+explorer.exe
+       │
+       ▼
+chrome.exe
+```
+
+`explorer.exe` becomes the parent.
+
+`chrome.exe` becomes the child.
+
+You can view parent-child relationships in **Process Explorer**.
+
+---
+
+# 8. Process Priority
+
+Windows schedules CPU time using priorities.
+
+Priority levels:
+
+| Priority     | Use                         |
+| ------------ | --------------------------- |
+| Realtime     | Critical tasks only         |
+| High         | Time-sensitive applications |
+| Above Normal | Slightly favored            |
+| Normal       | Default                     |
+| Below Normal | Background work             |
+| Low          | Minimal CPU usage           |
+
+Example:
+
+```
+Task Manager
+
+Right Click
+
+Set Priority
+```
+
+**Note:** Setting a process to **Realtime** can make the system unresponsive if misused.
+
+---
+
+# 9. 32-bit vs 64-bit Process
+
+| 32-bit                                            | 64-bit                                      |
+| ------------------------------------------------- | ------------------------------------------- |
+| x86                                               | x64                                         |
+| Up to ~4 GB address space                         | Much larger address space                   |
+| Runs under WoW64 on 64-bit Windows                | Native on 64-bit Windows                    |
+| Located in `C:\Program Files (x86)` by convention | Located in `C:\Program Files` by convention |
+
+On a 64-bit Windows OS:
+
+```
+64-bit OS
+
+├── 64-bit Apps
+└── 32-bit Apps (WOW64)
+```
+
+WOW64 = Windows-on-Windows 64-bit compatibility layer.
+
+---
+
+# 10. Session ID
+
+A **session** separates users and system services.
+
+Example:
+
+```
+Session 0
+
+Windows Services
+```
+
+```
+Session 1
+
+User A
+```
+
+```
+Session 2
+
+Remote Desktop User
+```
+
+This isolation improves security and stability.
+
+View Session IDs:
+
+```
+Task Manager
+
+Details
+
+Session ID
+```
+
+or
+
+```
+query session
+```
+
+---
+
+# Important Windows Processes
+
+---
+
+## 1. System Idle Process
+
+Purpose:
+
+Shows unused CPU.
+
+Example:
+
+```
+CPU = 99%
+```
+
+This means:
+
+**99% of the CPU is free**, not busy.
+
+PID:
+
+```
+0
+```
+
+---
+
+## 2. System
+
+Purpose:
+
+Represents the Windows kernel and kernel-mode threads.
+
+Responsibilities:
+
+* Driver execution
+* Interrupt handling
+* Kernel scheduling
+
+PID:
+
+Typically
+
+```
+4
+```
+
+---
+
+## 3. smss.exe
+
+Session Manager.
+
+First user-mode process.
+
+Starts:
+
+* csrss.exe
+* wininit.exe
+
+If it fails:
+
+Windows cannot complete boot.
+
+---
+
+## 4. csrss.exe
+
+Client Server Runtime Subsystem.
+
+Responsibilities:
+
+* Console windows
+* Thread creation support
+* Parts of the Win32 subsystem
+
+Critical process.
+
+If terminated:
+
+System crashes.
+
+---
+
+## 5. wininit.exe
+
+Windows Initialization Process.
+
+Starts:
+
+```
+services.exe
+lsass.exe
+lsm.exe
+```
+
+Runs only once during startup.
+
+---
+
+## 6. services.exe
+
+Service Control Manager (SCM).
+
+Responsibilities:
+
+* Starts Windows services
+* Stops services
+* Monitors services
+* Responds to service control requests
+
+Example:
+
+```
+DHCP Client
+DNS Client
+Windows Update
+```
+
+All are managed by `services.exe`.
+
+---
+
+## 7. lsass.exe
+
+Local Security Authority Subsystem Service.
+
+Responsibilities:
+
+* User authentication
+* Kerberos
+* NTLM
+* Password policy
+* Security tokens
+* Local security policy enforcement
+
+If it crashes:
+
+Windows typically forces a restart because security can no longer be guaranteed.
+
+---
+
+## 8. svchost.exe
+
+Service Host.
+
+Hosts Windows services that are implemented as DLLs.
+
+Example:
+
+```
+svchost.exe
+
+├── Windows Update
+├── DNS Client
+├── DHCP Client
+└── Event Log
+```
+
+Modern Windows versions run many services in separate `svchost.exe` instances for better isolation.
+
+Useful command:
+
+```cmd
+tasklist /svc
+```
+
+Shows which services are hosted by each `svchost.exe`.
+
+---
+
+## 9. explorer.exe
+
+Windows Shell.
+
+Provides:
+
+* Desktop
+* Taskbar
+* Start Menu
+* File Explorer
+
+If it crashes:
+
+The desktop disappears, but you can often restart it from Task Manager.
+
+---
+
+## 10. taskhostw.exe
+
+Task Host Window.
+
+Runs tasks that are implemented as DLLs instead of standalone executables.
+
+Example:
+
+Scheduled tasks or background components loaded from DLLs.
+
+---
+
+## 11. RuntimeBroker.exe
+
+Manages permissions and resource access for Universal Windows Platform (UWP) apps.
+
+Example:
+
+When a Store app requests:
+
+* Camera
+* Microphone
+* Location
+
+`RuntimeBroker.exe` helps enforce those permissions.
+
+---
+
+# Common Troubleshooting Scenarios
+
+| Symptom                    | Likely Area to Check                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| High CPU by `svchost.exe`  | Identify hosted services with `tasklist /svc`; inspect Windows Update, Event Log, or other hosted services. |
+| Desktop missing            | Check whether `explorer.exe` has crashed; restart it from Task Manager.                                     |
+| Login failures             | Investigate `lsass.exe`, authentication logs, domain connectivity, Kerberos/NTLM.                           |
+| Boot stops early           | Review `smss.exe`, `csrss.exe`, or `wininit.exe` issues in startup diagnostics.                             |
+| Many open files or objects | Check for excessive handle counts that may indicate a handle leak.                                          |
+| High memory usage          | Examine working set, committed memory, and virtual memory/page file usage.                                  |
+
+---
+
+Frequently Asked Interview Questions
+
+---
+
+# 1. What is the difference between a Process and a Thread?
+
+### Answer
+
+A **Process** is an independent running instance of a program with its own memory space, Process ID (PID), security token, handles, and resources.
+
+A **Thread** is the smallest unit of execution inside a process. Multiple threads within the same process share the process's memory and resources.
+
+**Example:**
+
+* `chrome.exe` = Process
+* Each browser tab or background task may run on different threads.
+
+### Comparison
+
+| Process                      | Thread                     |
+| ---------------------------- | -------------------------- |
+| Independent execution        | Runs inside a process      |
+| Has its own memory           | Shares process memory      |
+| Heavyweight                  | Lightweight                |
+| Has PID                      | Has TID                    |
+| Can contain multiple threads | Cannot exist independently |
+
+---
+
+### PowerShell
+
+#### Display all running processes
+
+```powershell
+Get-Process
+```
+
+#### Show threads for a specific process
+
+```powershell
+(Get-Process chrome).Threads
+```
+
+#### Display process ID
+
+```powershell
+Get-Process | Select ProcessName, Id
+```
+
+---
+
+# 2. What is a Handle? Why are Handle Leaks Dangerous?
+
+### Answer
+
+A **handle** is a reference that Windows gives a process to access system resources such as:
+
+* Files
+* Registry Keys
+* Processes
+* Threads
+* Mutexes
+* Events
+* Named Pipes
+
+Windows internally stores the actual object. The application only uses the handle.
+
+If an application continuously opens handles without releasing them, it causes a **handle leak**.
+
+Eventually:
+
+* Application hangs
+* Cannot open new files
+* High memory usage
+* Server becomes unstable
+
+---
+
+### PowerShell
+
+Show handle count
+
+```powershell
+Get-Process |
+Select ProcessName, Handles |
+Sort Handles -Descending
+```
+
+Top 10 handle consumers
+
+```powershell
+Get-Process |
+Sort Handles -Descending |
+Select -First 10
+```
+
+---
+
+# 3. What is Virtual Memory?
+
+### Answer
+
+Virtual Memory allows Windows to use disk space as an extension of RAM.
+
+When RAM becomes full:
+
+```
+RAM
+ ↓
+Pagefile.sys
+ ↓
+Disk
+```
+
+Windows moves less frequently used memory pages to `pagefile.sys`.
+
+Benefits:
+
+* Prevents application crashes due to low RAM.
+* Allows more applications to run simultaneously.
+* Provides each process with a private virtual address space.
+
+---
+
+### PowerShell
+
+View page file configuration
+
+```powershell
+Get-CimInstance Win32_PageFileUsage
+```
+
+View committed memory
+
+```powershell
+Get-Counter '\Memory\Committed Bytes'
+```
+
+Available memory
+
+```powershell
+Get-Counter '\Memory\Available MBytes'
+```
+
+---
+
+# 4. Difference Between PID and TID
+
+### Answer
+
+**PID (Process ID)** uniquely identifies a process.
+
+**TID (Thread ID)** uniquely identifies a thread inside a process.
+
+Example:
+
+```
+chrome.exe
+
+PID = 5520
+
+Thread1 = 334
+Thread2 = 552
+Thread3 = 876
+```
+
+One PID can contain many TIDs.
+
+---
+
+### PowerShell
+
+```powershell
+(Get-Process explorer).Threads
+```
+
+---
+
+# 5. What is Session 0 Isolation?
+
+### Answer
+
+Prior to Windows Vista, services and users shared Session 0.
+
+This created security risks because applications could interact with services.
+
+Modern Windows uses:
+
+```
+Session 0
+Windows Services
+
+Session 1
+Logged-in User
+
+Session 2
+Remote User
+```
+
+Benefits:
+
+* Better security.
+* Prevents desktop interaction by services.
+* Isolates users from system services.
+
+---
+
+### PowerShell
+
+Current sessions
+
+```powershell
+query session
+```
+
+Current logged-in user
+
+```powershell
+quser
+```
+
+---
+
+# 6. What Does services.exe Do?
+
+### Answer
+
+`services.exe` is the **Service Control Manager (SCM)**.
+
+Responsibilities:
+
+* Starts Windows services.
+* Stops services.
+* Restarts services.
+* Tracks service status.
+* Maintains service dependencies.
+
+Without `services.exe`, Windows services cannot be managed.
+
+---
+
+### PowerShell
+
+List services
+
+```powershell
+Get-Service
+```
+
+Stopped services
+
+```powershell
+Get-Service |
+Where Status -eq Stopped
+```
+
+Running services
+
+```powershell
+Get-Service |
+Where Status -eq Running
+```
+
+Automatic services not running
+
+```powershell
+Get-CimInstance Win32_Service |
+Where-Object {
+    $_.StartMode -eq "Auto" -and
+    $_.State -ne "Running"
+}
+```
+
+---
+
+# 7. Why Are There Multiple svchost.exe Processes?
+
+### Answer
+
+`svchost.exe` hosts Windows services that are implemented as DLLs.
+
+Older Windows versions grouped many services into one `svchost.exe` process.
+
+Modern Windows creates multiple `svchost.exe` instances to:
+
+* Improve isolation.
+* Prevent one failing service from affecting others.
+* Improve security.
+* Simplify troubleshooting.
+
+---
+
+### PowerShell
+
+List all `svchost` processes
+
+```powershell
+Get-Process svchost
+```
+
+View hosted services
+
+```powershell
+tasklist /svc
+```
+
+Or
+
+```powershell
+Get-CimInstance Win32_Service |
+Select Name, ProcessId
+```
+
+---
+
+# 8. How Do You Identify Services Running Under svchost.exe?
+
+### Answer
+
+Use `tasklist /svc`.
+
+Example:
+
+```
+svchost.exe 1248
+
+DHCP
+DNS
+WinRM
+```
+
+Or match the Process ID from Task Manager to the service list.
+
+---
+
+### PowerShell
+
+```powershell
+Get-CimInstance Win32_Service |
+Sort ProcessId |
+Select Name, State, ProcessId
+```
+
+---
+
+# 9. What Happens If explorer.exe Crashes?
+
+### Answer
+
+If `explorer.exe` crashes:
+
+* Desktop disappears.
+* Taskbar disappears.
+* Start menu disappears.
+* Open applications continue running.
+
+Restart it from Task Manager.
+
+---
+
+### PowerShell
+
+Restart Explorer
+
+```powershell
+Stop-Process -Name explorer -Force
+
+Start-Process explorer.exe
+```
+
+---
+
+# 10. Why is lsass.exe Critical?
+
+### Answer
+
+`lsass.exe` (Local Security Authority Subsystem Service) handles:
+
+* User authentication.
+* Kerberos.
+* NTLM.
+* Security policy.
+* Password validation.
+* Security token creation.
+
+If `lsass.exe` crashes:
+
+* Windows considers the system compromised.
+* The operating system usually forces a restart.
+
+---
+
+### PowerShell
+
+Check LSASS
+
+```powershell
+Get-Process lsass
+```
+
+Memory usage
+
+```powershell
+Get-Process lsass |
+Select Name,
+CPU,
+Handles,
+Threads,
+PM
+```
+
+---
+
+# Common PowerShell Commands Used by Windows Administrators
+
+## CPU Usage
+
+```powershell
+Get-Process |
+Sort CPU -Descending |
+Select -First 10
+```
+
+---
+
+## Memory Usage
+
+```powershell
+Get-Process |
+Sort WS -Descending |
+Select -First 10
+```
+
+---
+
+## Handle Count
+
+```powershell
+Get-Process |
+Sort Handles -Descending |
+Select -First 10
+```
+
+---
+
+## Thread Count
+
+```powershell
+Get-Process |
+Sort Threads -Descending |
+Select -First 10 ProcessName,Threads
+```
+
+---
+
+## Automatic Services Not Running
+
+```powershell
+Get-CimInstance Win32_Service |
+Where-Object {
+    $_.StartMode -eq "Auto" -and
+    $_.State -ne "Running"
+}
+```
+
+---
+
+## Recently Stopped Services
+
+```powershell
+Get-WinEvent -LogName System |
+Where-Object {
+    $_.ProviderName -eq "Service Control Manager"
+}
+```
+
+---
+
+## High CPU Processes
+
+```powershell
+Get-Process |
+Sort CPU -Descending |
+Select -First 10
+```
+
+---
+
+## Top Memory Consumers
+
+```powershell
+Get-Process |
+Sort WorkingSet -Descending |
+Select -First 10
+```
+
+---
+
+## Services Using svchost.exe
+
+```powershell
+Get-CimInstance Win32_Service |
+Where ProcessId -gt 0 |
+Sort ProcessId
+```
+
+---
+
+## Check System Uptime
+
+```powershell
+(Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+```
+
+---
+
+## Check Boot Time
+
+```powershell
+systeminfo | find "Boot Time"
+```
+
+---
+
+# Mini PowerShell Health Check Tool
+
+This script gives you a quick snapshot of process and service health that is useful during troubleshooting.
+
+```powershell
+Write-Host "========== WINDOWS HEALTH CHECK ==========" -ForegroundColor Cyan
+
+Write-Host "`nTop 10 CPU Consumers" -ForegroundColor Yellow
+Get-Process |
+Sort CPU -Descending |
+Select -First 10 ProcessName,Id,CPU
+
+Write-Host "`nTop 10 Memory Consumers" -ForegroundColor Yellow
+Get-Process |
+Sort WorkingSet -Descending |
+Select -First 10 ProcessName,
+@{Name="Memory(MB)";Expression={[math]::Round($_.WorkingSet64/1MB,2)}}
+
+Write-Host "`nAutomatic Services NOT Running" -ForegroundColor Yellow
+Get-CimInstance Win32_Service |
+Where-Object {
+    $_.StartMode -eq "Auto" -and
+    $_.State -ne "Running"
+} |
+Select Name,DisplayName,State
+
+Write-Host "`nTop Handle Count" -ForegroundColor Yellow
+Get-Process |
+Sort Handles -Descending |
+Select -First 10 ProcessName,Handles
+
+Write-Host "`nTop Thread Count" -ForegroundColor Yellow
+Get-Process |
+Sort Threads -Descending |
+Select -First 10 ProcessName,Threads
+
+Write-Host "`nMemory Information" -ForegroundColor Yellow
+Get-Counter '\Memory\Available MBytes'
+
+Write-Host "`nSystem Uptime" -ForegroundColor Yellow
+(Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+
+Write-Host "`nHealth Check Completed." -ForegroundColor Green
+```
+
+## Interview Tip
+
+When asked **"How do you troubleshoot a slow Windows server?"**, structure your answer like this:
+
+1. Verify CPU usage (`Get-Process`, Task Manager, PerfMon).
+2. Check memory pressure and page file usage (`Get-Counter`, `Get-CimInstance Win32_PageFileUsage`).
+3. Review disk utilization and latency (`Get-PhysicalDisk`, Performance Monitor).
+4. Check automatic services that are stopped (`Get-Service`, `Win32_Service`).
+5. Inspect Event Viewer for System and Application errors.
+6. Review top processes by CPU, memory, handles, and threads.
+7. If needed, collect performance logs or memory dumps for deeper analysis.
+
+This systematic approach demonstrates the structured troubleshooting mindset expected of an experienced Windows administrator.
+
+
+Mastering these concepts will make it much easier to diagnose Windows performance problems, service issues, authentication failures, and startup problems in real enterprise environments.
