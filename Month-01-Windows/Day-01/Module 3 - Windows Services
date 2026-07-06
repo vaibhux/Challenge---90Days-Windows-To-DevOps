@@ -1,0 +1,522 @@
+# Module 3: Windows Services (Windows Server Administration)
+
+This is one of the **most frequently asked interview topics** because almost every Windows Server issue involves a service. If services fail, applications, databases, IIS websites, backups, Active Directory, SQL Server, and DNS can all stop working.
+
+---
+
+# What is a Windows Service?
+
+A **Windows Service** is a background application that runs without user interaction and performs specific system or application tasks.
+
+Unlike normal applications, services:
+
+* Start automatically when Windows boots (if configured).
+* Continue running even if no user is logged in.
+* Can be managed centrally by Windows.
+* Usually run under a service account (Local System, Network Service, Local Service, or a domain account).
+
+Examples:
+
+| Service                               | Purpose                        |
+| ------------------------------------- | ------------------------------ |
+| DNS Client                            | Resolves DNS names             |
+| DHCP Client                           | Obtains IP address             |
+| Print Spooler                         | Handles print jobs             |
+| Windows Update                        | Downloads and installs updates |
+| Windows Time                          | Synchronizes system time       |
+| SQL Server                            | Runs SQL databases             |
+| IIS World Wide Web Publishing Service | Hosts websites                 |
+
+---
+
+# Service Architecture
+
+```text
+Windows Boot
+      │
+      ▼
+Service Control Manager (SCM)
+      │
+      ├── DNS Client
+      ├── DHCP Client
+      ├── Print Spooler
+      ├── SQL Server
+      ├── IIS
+      └── Windows Update
+```
+
+SCM is responsible for managing all services.
+
+---
+
+# What is Service Control Manager (SCM)?
+
+**Service Control Manager (SCM)** is the Windows component that manages services.
+
+Process:
+
+```text
+services.exe
+```
+
+Location:
+
+```text
+C:\Windows\System32\services.exe
+```
+
+### Responsibilities
+
+* Starts services during boot.
+* Stops services.
+* Restarts failed services.
+* Maintains dependencies.
+* Tracks service status.
+* Controls startup types.
+* Executes recovery actions.
+
+Without SCM, Windows cannot manage services.
+
+---
+
+## Interview Question
+
+**What process manages Windows Services?**
+
+**Answer:**
+
+`services.exe`, also known as the **Service Control Manager (SCM)**.
+
+---
+
+# Service Lifecycle
+
+A Windows Service goes through several states.
+
+```text
+Installed
+     │
+     ▼
+Start Pending
+     │
+     ▼
+Running
+     │
+ ┌───┴─────┐
+ │         │
+Pause   Continue
+ │         │
+ └────┬────┘
+      ▼
+Stop Pending
+      │
+      ▼
+Stopped
+```
+
+### Meaning
+
+| State            | Description                   |
+| ---------------- | ----------------------------- |
+| Stopped          | Service is not running        |
+| Start Pending    | Service is starting           |
+| Running          | Service is active             |
+| Pause Pending    | Service is preparing to pause |
+| Paused           | Temporarily suspended         |
+| Continue Pending | Service is resuming           |
+| Stop Pending     | Service is shutting down      |
+
+---
+
+### PowerShell
+
+Display all services
+
+```powershell
+Get-Service
+```
+
+Running services
+
+```powershell
+Get-Service | Where-Object Status -eq Running
+```
+
+Stopped services
+
+```powershell
+Get-Service | Where-Object Status -eq Stopped
+```
+
+---
+
+# Startup Types
+
+Startup type determines when Windows starts a service.
+
+---
+
+## 1. Automatic
+
+Service starts immediately during system boot.
+
+Examples:
+
+* DNS Client
+* DHCP Client
+* Event Log
+
+PowerShell
+
+```powershell
+Get-Service Winmgmt
+```
+
+---
+
+## 2. Automatic (Delayed Start)
+
+Windows waits until boot is mostly complete before starting the service.
+
+Benefits:
+
+* Faster boot.
+* Lower CPU usage during startup.
+* Better boot performance.
+
+Examples:
+
+* Windows Search
+* Background Intelligent Transfer Service (BITS)
+
+---
+
+## 3. Manual
+
+Service starts only when:
+
+* A user starts it.
+* An application requests it.
+* Another service triggers it.
+
+Example:
+
+Remote Registry
+
+---
+
+## 4. Disabled
+
+Service cannot be started unless it is first re-enabled.
+
+Used for:
+
+* Security hardening.
+* Unused features.
+* Legacy services.
+
+Example:
+
+Fax service (if unused)
+
+---
+
+### Check Startup Type
+
+```powershell
+Get-CimInstance Win32_Service |
+Select Name, StartMode
+```
+
+---
+
+### Change Startup Type
+
+Automatic
+
+```powershell
+Set-Service Spooler -StartupType Automatic
+```
+
+Manual
+
+```powershell
+Set-Service Spooler -StartupType Manual
+```
+
+Disabled
+
+```powershell
+Set-Service Spooler -StartupType Disabled
+```
+
+---
+
+# Dependencies
+
+Some services require other services to run first.
+
+Example:
+
+```text
+Print Spooler
+      │
+      ▼
+RPC Service
+```
+
+If RPC is stopped:
+
+```text
+Print Spooler
+Cannot Start
+```
+
+Windows checks dependencies before starting a service.
+
+---
+
+### View Dependencies
+
+```powershell
+Get-Service Spooler |
+Select -ExpandProperty ServicesDependedOn
+```
+
+Or
+
+```powershell
+Get-Service Spooler |
+Format-List *
+```
+
+---
+
+### Check Dependent Services
+
+```powershell
+Get-Service Spooler |
+Select -ExpandProperty DependentServices
+```
+
+---
+
+## Interview Question
+
+**A service fails to start. What will you check first?**
+
+**Answer:**
+
+1. Service status.
+2. Dependencies.
+3. Event Viewer.
+4. Service account.
+5. Startup type.
+6. Required ports.
+7. Error code.
+8. Logs.
+
+---
+
+# Recovery Actions
+
+Recovery actions determine what Windows should do when a service crashes.
+
+Options:
+
+* Restart the service.
+* Run a program.
+* Restart the computer.
+* Take no action.
+
+Example:
+
+```text
+Service Crash
+      │
+      ▼
+Restart Service
+```
+
+Typical configuration:
+
+| Failure        | Action           |
+| -------------- | ---------------- |
+| First Failure  | Restart Service  |
+| Second Failure | Restart Service  |
+| Third Failure  | Restart Computer |
+
+---
+
+### View Recovery Configuration
+
+PowerShell does not have a built-in cmdlet for recovery actions. Use:
+
+```cmd
+sc qfailure Spooler
+```
+
+Configure recovery:
+
+```cmd
+sc failure Spooler reset=86400 actions=restart/60000
+```
+
+---
+
+# Frequently Asked Interview Questions
+
+## 1. What is a Windows Service?
+
+**Answer:**
+
+A Windows Service is a background application that runs independently of user logon and performs system or application tasks. It can start automatically during boot and is managed by the Service Control Manager.
+
+---
+
+## 2. What is the Service Control Manager (SCM)?
+
+**Answer:**
+
+SCM is the Windows component (`services.exe`) responsible for starting, stopping, monitoring, and managing Windows services, including their dependencies, startup types, and recovery actions.
+
+---
+
+## 3. What is the difference between a Process and a Service?
+
+| Process                              | Service                           |
+| ------------------------------------ | --------------------------------- |
+| Any running program                  | Background program managed by SCM |
+| Can be interactive                   | Usually non-interactive           |
+| May require a logged-in user         | Can run without user login        |
+| Started by a user or another process | Started by SCM                    |
+
+---
+
+## 4. What are the startup types?
+
+**Answer:**
+
+* **Automatic** – Starts during boot.
+* **Automatic (Delayed Start)** – Starts shortly after boot to reduce startup load.
+* **Manual** – Starts only when requested.
+* **Disabled** – Cannot start until enabled.
+
+---
+
+## 5. What is a Service Dependency?
+
+**Answer:**
+
+A dependency is another service that must be running before the current service can start.
+
+Example:
+
+Print Spooler depends on RPC.
+
+---
+
+## 6. How do you troubleshoot a service that won't start?
+
+**Answer:**
+
+1. Check the service status (`Get-Service`).
+2. Verify the startup type.
+3. Check dependencies.
+4. Review **Event Viewer** (System/Application logs).
+5. Verify the service account and password (if applicable).
+6. Check permissions and required ports.
+7. Review application-specific logs.
+8. Attempt to start the service manually and note the error.
+
+---
+
+## 7. What are Service Recovery Actions?
+
+**Answer:**
+
+Recovery actions define what Windows should do if a service fails, such as restarting the service, running a program, restarting the computer, or taking no action.
+
+---
+
+## 8. How do you list all Automatic services that are not running?
+
+```powershell
+Get-CimInstance Win32_Service |
+Where-Object {
+    $_.StartMode -eq "Auto" -and
+    $_.State -ne "Running"
+} |
+Select Name, DisplayName, State
+```
+
+---
+
+# Windows Service Health Check Tool
+
+This PowerShell script performs a quick service audit that is useful during L2/L3 troubleshooting.
+
+```powershell
+Write-Host "========== WINDOWS SERVICE HEALTH CHECK ==========" -ForegroundColor Cyan
+
+Write-Host "`nRunning Services" -ForegroundColor Yellow
+Get-Service |
+Where-Object Status -eq Running |
+Sort-Object DisplayName |
+Select Name, DisplayName
+
+Write-Host "`nStopped Automatic Services (Potential Issue)" -ForegroundColor Red
+Get-CimInstance Win32_Service |
+Where-Object {
+    $_.StartMode -eq "Auto" -and
+    $_.State -ne "Running"
+} |
+Select Name, DisplayName, State
+
+Write-Host "`nDisabled Services" -ForegroundColor Yellow
+Get-CimInstance Win32_Service |
+Where-Object StartMode -eq "Disabled" |
+Select Name, DisplayName
+
+Write-Host "`nTop 10 Recently Started Services" -ForegroundColor Yellow
+Get-WinEvent -LogName System -MaxEvents 500 |
+Where-Object ProviderName -eq "Service Control Manager" |
+Where-Object Id -eq 7036 |
+Select-Object -First 10 TimeCreated, Message
+
+Write-Host "`nService Health Check Completed." -ForegroundColor Green
+```
+
+---
+
+# Real-Time Interview Scenario
+
+**Question:** *Users report they cannot print from any workstation. How would you troubleshoot?*
+
+**Expected Answer:**
+
+1. Check whether the **Print Spooler** service is running:
+
+   ```powershell
+   Get-Service Spooler
+   ```
+2. Start it if it is stopped:
+
+   ```powershell
+   Start-Service Spooler
+   ```
+3. Verify its startup type is **Automatic**:
+
+   ```powershell
+   Get-CimInstance Win32_Service -Filter "Name='Spooler'" |
+   Select Name, StartMode, State
+   ```
+4. Check dependencies (especially **RPC**):
+
+   ```powershell
+   Get-Service Spooler | Select -ExpandProperty ServicesDependedOn
+   ```
+5. Review **Event Viewer** for Service Control Manager (Event IDs such as 7000–7009 and 7031–7036).
+6. If the service repeatedly crashes, inspect the print queue, printer drivers, and configure appropriate recovery actions.
+
+This kind of structured, command-driven answer demonstrates the practical troubleshooting approach that interviewers look for in Windows Server administrators.
